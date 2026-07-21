@@ -1,1 +1,909 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gitspark — find your first commit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F5A623'%3E%3Cpath d='M12 2 L15 9 L22 10 L17 15 L18 22 L12 18.5 L6 22 L7 15 L2 10 L9 9 Z'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --surface: #111726;
+        --surface-2: #161d2e;
+        --line: #232b3d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --add: #3fb950;
+        --add-dim: #1a3620;
+        --remove: #f78166;
+        --remove-dim: #3a1f1a;
+        --amber: #ffa657;
+        --amber-dim: #3a2a14;
+      }
+      [data-theme="light"] {
+        --bg: #f7f8fa;
+        --surface: #ffffff;
+        --surface-2: #f0f2f5;
+        --line: #e1e4e9;
+        --text: #0b0e14;
+        --muted: #5b6472;
+        --add: #1a7f37;
+        --add-dim: #dafbe1;
+        --remove: #cf222e;
+        --remove-dim: #ffebe9;
+        --amber: #9a5b0e;
+        --amber-dim: #fff1da;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg);
+        color: var(--text);
+        transition:
+          background 0.2s ease,
+          color 0.2s ease;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .theme-toggle {
+        width: 40px;
+        height: 24px;
+        border-radius: 99px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        position: relative;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .theme-toggle .knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--amber);
+        transition: transform 0.2s ease;
+      }
+      [data-theme="light"] .theme-toggle .knob {
+        transform: translateX(16px);
+        background: var(--add);
+      }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+      ::selection {
+        background: var(--amber-dim);
+        color: var(--amber);
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--line);
+        border-radius: 6px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #2d3750;
+      }
+
+      .graph-rail {
+        position: relative;
+      }
+      .graph-rail::before {
+        content: "";
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: repeating-linear-gradient(
+          to bottom,
+          var(--line) 0 6px,
+          transparent 6px 12px
+        );
+      }
+      .graph-dot {
+        position: relative;
+        z-index: 1;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--add);
+        box-shadow:
+          0 0 0 4px var(--bg),
+          0 0 12px rgba(63, 185, 80, 0.5);
+        flex-shrink: 0;
+        margin-top: 6px;
+      }
+
+      .chip {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        transition: 0.15s ease;
+      }
+      .chip[data-active="true"] {
+        background: var(--amber-dim);
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+      .chip:hover {
+        border-color: #39445c;
+      }
+
+      .btn-primary {
+        background: var(--add);
+        color: #04140a;
+        font-weight: 700;
+        transition: 0.15s ease;
+      }
+      .btn-primary:hover {
+        background: #4ec863;
+        transform: translateY(-1px);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        transition: 0.18s ease;
+      }
+      .card:hover {
+        border-color: #2d3750;
+        background: var(--surface-2);
+        transform: translateX(2px);
+      }
+
+      .label-add::before {
+        content: "+ ";
+        color: var(--add);
+        font-weight: 700;
+      }
+      .label-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        background: var(--add-dim);
+        color: var(--add);
+        border: 1px solid #1e4a26;
+        padding: 2px 7px;
+        border-radius: 4px;
+      }
+      .label-tag.help {
+        background: var(--amber-dim);
+        color: var(--amber);
+        border-color: #4a3418;
+      }
+
+      .star-btn.saved svg {
+        fill: var(--amber);
+        stroke: var(--amber);
+      }
+
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--surface) 0%,
+          var(--surface-2) 50%,
+          var(--surface) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.4s infinite;
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .tab-underline {
+        position: relative;
+      }
+      .tab-underline[data-active="true"]::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -9px;
+        height: 2px;
+        background: var(--add);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+
+      .focus-ring:focus-visible {
+        outline: 2px solid var(--amber);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <!-- NAV -->
+    <header class="border-b" style="border-color: var(--line)">
+      <div
+        class="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <span class="mono text-lg font-extrabold tracking-tight"
+            >git<span style="color: var(--add)">spark</span></span
+          >
+          <span
+            class="mono text-[10px] text-[--muted] hidden sm:inline"
+            style="color: var(--muted)"
+            >v1.0</span
+          >
+        </div>
+        <nav class="flex items-center gap-6 mono text-sm">
+          <button
+            id="tabDiscover"
+            data-active="true"
+            class="tab-underline focus-ring pb-1"
+            style="color: var(--text)"
+          >
+            discover
+          </button>
+          <button
+            id="tabSaved"
+            data-active="false"
+            class="tab-underline focus-ring pb-1"
+            style="color: var(--muted)"
+          >
+            saved
+            <span
+              id="savedCount"
+              class="ml-1 px-1.5 rounded"
+              style="background: var(--surface-2)"
+              >0</span
+            >
+          </button>
+          <button
+            id="themeToggle"
+            class="theme-toggle focus-ring"
+            aria-label="toggle light/dark mode"
+            title="toggle light/dark mode"
+          >
+            <span class="knob"></span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 pt-14 pb-8">
+      <p class="label-add mono text-sm mb-3" style="color: var(--muted)">
+        real issues, open repos, no signup
+      </p>
+      <h1
+        class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.05] mb-4"
+      >
+        Find your first<br />
+        <span style="color: var(--add)">commit</span
+        ><span class="mono" style="color: var(--muted)">.</span>
+      </h1>
+      <p
+        class="max-w-xl text-[15px] leading-relaxed"
+        style="color: var(--muted)"
+      >
+        A beginner drowns in a thousand repos before finding one issue worth
+        trying. gitspark pulls live "good first issue" and "help wanted" threads
+        straight from GitHub — pick a language, pick a size, ship a PR.
+      </p>
+    </section>
+
+    <!-- SEARCH / FILTER TERMINAL -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 mb-6">
+      <div
+        class="rounded-lg border p-3 sm:p-4"
+        style="background: var(--surface); border-color: var(--line)"
+      >
+        <div class="flex items-center gap-2 mb-3">
+          <span class="mono text-sm" style="color: var(--add)">$</span>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="search issues... e.g. 'parser', 'dark mode', 'cli'"
+            class="mono flex-1 bg-transparent outline-none text-sm focus-ring rounded px-1"
+            style="color: var(--text)"
+          />
+          <button
+            id="searchBtn"
+            class="btn-primary mono text-xs px-3 py-1.5 rounded focus-ring"
+          >
+            run
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-2 items-center" id="langChips">
+          <span
+            class="mono text-[10px] uppercase tracking-wider mr-1 self-center"
+            style="color: var(--muted)"
+            >lang</span
+          >
+        </div>
+        <div class="flex items-center gap-2 mb-3">
+          <input
+            id="langInput"
+            type="text"
+            placeholder="or type any language e.g. 'kotlin', 'elixir'..."
+            class="mono flex-1 bg-transparent outline-none text-xs focus-ring rounded px-2 py-1.5 border"
+            style="color: var(--text); border-color: var(--line)"
+          />
+          <button id="langBtn" class="chip mono focus-ring">
+            set language
+          </button>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-2 items-center" id="labelChips">
+          <span
+            class="mono text-[10px] uppercase tracking-wider mr-1 self-center"
+            style="color: var(--muted)"
+            >label</span
+          >
+        </div>
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+          <span
+            class="mono text-[10px] uppercase tracking-wider mr-1"
+            style="color: var(--muted)"
+            >status</span
+          >
+          <button
+            id="unassignedChip"
+            class="chip mono focus-ring"
+            data-active="false"
+          >
+            🙋 unassigned only
+          </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span
+            class="mono text-[10px] uppercase tracking-wider mr-1"
+            style="color: var(--muted)"
+            >sort</span
+          >
+          <select
+            id="sortSelect"
+            class="chip mono bg-transparent focus-ring"
+            style="color: var(--muted)"
+          >
+            <option value="created" style="background: var(--surface)">
+              newest
+            </option>
+            <option value="updated" style="background: var(--surface)">
+              recently updated
+            </option>
+            <option value="comments" style="background: var(--surface)">
+              most discussed
+            </option>
+          </select>
+          <button id="randomBtn" class="chip mono ml-auto focus-ring">
+            🎲 surprise me
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATUS LINE -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 mb-5">
+      <div
+        class="rounded-lg border px-4 py-3 flex items-center gap-3"
+        style="background: var(--surface); border-color: var(--line)"
+      >
+        <span class="graph-dot" style="margin-top: 0"></span>
+        <p id="statusLine" class="mono text-sm font-medium">
+          ready. hit run to fetch open issues.
+        </p>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 pb-24">
+      <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <div id="emptyState" class="hidden text-center py-20">
+        <p class="mono text-sm" style="color: var(--muted)">
+          no issues found. try a different language or search term.
+        </p>
+      </div>
+      <div
+        id="rateLimitNote"
+        class="hidden mt-6 rounded-lg border p-4 mono text-xs"
+        style="
+          border-color: var(--remove);
+          background: var(--remove-dim);
+          color: var(--remove);
+        "
+      ></div>
+    </section>
+
+    <!-- CARD TEMPLATE (hidden) -->
+    <template id="cardTemplate">
+      <article class="card rounded-lg p-4 sm:p-5 relative flex flex-col h-full">
+        <div class="flex items-start gap-3 h-full">
+          <div class="graph-dot"></div>
+          <div class="flex-1 min-w-0 flex flex-col">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <a
+                  class="repo-link mono text-xs hover:underline"
+                  target="_blank"
+                  style="color: var(--amber)"
+                ></a>
+                <h3
+                  class="issue-title font-semibold text-[15px] leading-snug mt-1 mb-2"
+                ></h3>
+              </div>
+              <button
+                class="star-btn focus-ring shrink-0"
+                aria-label="save issue"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--muted)"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="labels-wrap flex flex-wrap gap-1.5 mb-2"></div>
+            <div
+              class="meta-line mono text-xs flex flex-wrap items-center gap-3"
+              style="color: var(--muted)"
+            >
+              <span class="stars-count"></span>
+              <span class="comments-count"></span>
+              <span class="updated-at"></span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <footer class="border-t py-6" style="border-color: var(--line)">
+      <p
+        class="max-w-6xl mx-auto px-5 sm:px-8 mono text-[11px]"
+        style="color: var(--muted)"
+      >
+        data via GitHub public Search API · unauthenticated requests are
+        rate-limited to ~10/min by GitHub · saved issues live only in this
+        browser (localStorage)
+      </p>
+    </footer>
+
+    <script>
+      (function () {
+        const LANGS = [
+          "javascript",
+          "typescript",
+          "python",
+          "java",
+          "go",
+          "rust",
+          "c++",
+        ];
+        const LABELS = [
+          { key: "good first issue", cls: "add" },
+          { key: "help wanted", cls: "help" },
+        ];
+
+        const state = {
+          lang: null,
+          label: '"good first issue"',
+          sort: "created",
+          query: "",
+          tab: "discover",
+          items: [],
+          unassignedOnly: false,
+        };
+
+        const el = (id) => document.getElementById(id);
+        const resultsEl = el("results");
+        const statusLine = el("statusLine");
+        const emptyState = el("emptyState");
+        const rateNote = el("rateLimitNote");
+        const template = el("cardTemplate");
+
+        // ---------- localStorage ----------
+        const STORAGE_KEY = "gitspark_saved_v1";
+        function getSaved() {
+          try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+          } catch (e) {
+            return [];
+          }
+        }
+        function setSaved(list) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+          } catch (e) {
+            console.warn("localStorage unavailable:", e);
+          }
+          updateSavedCount();
+        }
+        function isSaved(id) {
+          return getSaved().some((i) => i.id === id);
+        }
+        function toggleSave(issue) {
+          let list = getSaved();
+          if (isSaved(issue.id)) {
+            list = list.filter((i) => i.id !== issue.id);
+          } else {
+            list.push(issue);
+          }
+          setSaved(list);
+        }
+        function updateSavedCount() {
+          el("savedCount").textContent = getSaved().length;
+        }
+
+        // ---------- chips ----------
+        function renderChips() {
+          const langWrap = el("langChips");
+          LANGS.forEach((l) => {
+            const b = document.createElement("button");
+            b.textContent = l;
+            b.className = "chip mono focus-ring";
+            b.dataset.active = state.lang === l ? "true" : "false";
+            b.onclick = () => {
+              state.lang = state.lang === l ? null : l;
+              renderChips();
+            };
+            langWrap.appendChild(b);
+          });
+          // clear old chips before re-render (avoid dupes on toggle)
+          Array.from(langWrap.children).forEach((c, i) => {
+            if (i > 0) return;
+          });
+        }
+        function renderLabelChips() {
+          const wrap = el("labelChips");
+          LABELS.forEach((l) => {
+            const b = document.createElement("button");
+            b.textContent = l.key;
+            b.className = "chip mono focus-ring";
+            b.dataset.active = state.label === `"${l.key}"` ? "true" : "false";
+            b.onclick = () => {
+              state.label = `"${l.key}"`;
+              Array.from(wrap.querySelectorAll("button")).forEach((btn) => {
+                btn.dataset.active =
+                  btn.textContent === l.key ? "true" : "false";
+              });
+            };
+            wrap.appendChild(b);
+          });
+        }
+        // build lang chips properly without dupes (rebuild each time)
+        function rebuildLangChips() {
+          const wrap = el("langChips");
+          wrap.querySelectorAll("button").forEach((b) => b.remove());
+          LANGS.forEach((l) => {
+            const b = document.createElement("button");
+            b.textContent = l;
+            b.className = "chip mono focus-ring";
+            b.dataset.active = state.lang === l ? "true" : "false";
+            b.onclick = () => {
+              state.lang = state.lang === l ? null : l;
+              rebuildLangChips();
+            };
+            wrap.appendChild(b);
+          });
+        }
+
+        // ---------- fetch ----------
+        async function fetchIssues({ random = false } = {}) {
+          statusLine.textContent = "fetching from github...";
+          emptyState.classList.add("hidden");
+          rateNote.classList.add("hidden");
+          resultsEl.innerHTML = "";
+          showSkeletons();
+
+          let q = `is:issue is:open label:${state.label}`;
+          if (state.lang) q += ` language:${state.lang}`;
+          if (state.unassignedOnly) q += ` no:assignee`;
+          if (state.query.trim()) q += ` ${state.query.trim()} in:title`;
+
+          const sort = state.sort === "comments" ? "comments" : state.sort;
+          const url = `https://api.github.com/search/issues?q=${encodeURIComponent(q)}&sort=${sort}&order=desc&per_page=25`;
+
+          try {
+            const res = await fetch(url, {
+              headers: { Accept: "application/vnd.github+json" },
+            });
+            if (res.status === 403) {
+              rateNote.textContent =
+                "github rate limit hit (unauthenticated requests are capped ~10/min). wait a minute and try again.";
+              rateNote.classList.remove("hidden");
+              resultsEl.innerHTML = "";
+              statusLine.textContent = "rate limited.";
+              return;
+            }
+            if (!res.ok) {
+              throw new Error(`github responded ${res.status}`);
+            }
+            const data = await res.json();
+            let items = data.items || [];
+            if (random && items.length) {
+              items = [items[Math.floor(Math.random() * items.length)]];
+            }
+            state.items = items;
+            renderResults(items);
+            statusLine.textContent = `${data.total_count ?? items.length} open issue(s) found${state.lang ? " · " + state.lang : ""}.`;
+          } catch (err) {
+            console.error(err);
+            statusLine.textContent =
+              "couldn't reach github. check your connection and try again.";
+            resultsEl.innerHTML = "";
+          }
+        }
+
+        function showSkeletons() {
+          for (let i = 0; i < 4; i++) {
+            const s = document.createElement("div");
+            s.className = "skeleton rounded-lg h-24";
+            resultsEl.appendChild(s);
+          }
+        }
+
+        function timeAgo(dateStr) {
+          const d = new Date(dateStr);
+          const diff = (Date.now() - d.getTime()) / 1000;
+          const units = [
+            [31536000, "y"],
+            [2592000, "mo"],
+            [604800, "w"],
+            [86400, "d"],
+            [3600, "h"],
+            [60, "m"],
+          ];
+          for (const [s, label] of units) {
+            if (diff >= s) return Math.floor(diff / s) + label + " ago";
+          }
+          return "just now";
+        }
+
+        function renderResults(items) {
+          resultsEl.innerHTML = "";
+          if (!items.length) {
+            emptyState.classList.remove("hidden");
+            return;
+          }
+          items.forEach((issue) => renderCard(issue));
+        }
+
+        function renderCard(issue) {
+          const node = template.content.cloneNode(true);
+          const repoUrl = issue.repository_url.replace(
+            "https://api.github.com/repos/",
+            "https://github.com/",
+          );
+          const repoName = issue.repository_url.split("/repos/")[1];
+
+          node.querySelector(".repo-link").textContent = repoName;
+          node.querySelector(".repo-link").href = repoUrl;
+          const titleEl = node.querySelector(".issue-title");
+          titleEl.textContent = issue.title;
+          titleEl.parentElement.parentElement.parentElement.querySelector(
+            ".issue-title",
+          ); // no-op safe
+          const article = node.querySelector("article");
+          article.dataset.id = issue.id;
+
+          const labelsWrap = node.querySelector(".labels-wrap");
+          (issue.labels || []).slice(0, 4).forEach((l) => {
+            const span = document.createElement("span");
+            span.className =
+              "label-tag" + (/help/i.test(l.name) ? " help" : "");
+            span.textContent = l.name;
+            labelsWrap.appendChild(span);
+          });
+
+          node.querySelector(".stars-count").textContent =
+            `💬 ${issue.comments}`;
+          node.querySelector(".comments-count").textContent =
+            `#${issue.number}`;
+          node.querySelector(".updated-at").textContent = timeAgo(
+            issue.updated_at,
+          );
+
+          const claimSpan = document.createElement("span");
+          const isAssigned = issue.assignees && issue.assignees.length > 0;
+          claimSpan.textContent =
+            isAssigned ? `🔒 assigned` : `✅ open to claim`;
+          claimSpan.style.color = isAssigned ? "var(--remove)" : "var(--add)";
+          node.querySelector(".meta-line").appendChild(claimSpan);
+
+          // clicking title/repo opens issue
+          titleEl.style.cursor = "pointer";
+          titleEl.onclick = () => window.open(issue.html_url, "_blank");
+
+          const starBtn = node.querySelector(".star-btn");
+          const saved = isSaved(issue.id);
+          starBtn.classList.toggle("saved", saved);
+          starBtn.onclick = () => {
+            toggleSave({
+              id: issue.id,
+              title: issue.title,
+              html_url: issue.html_url,
+              repoName,
+              comments: issue.comments,
+              updated_at: issue.updated_at,
+              labels: (issue.labels || []).map((l) => l.name),
+            });
+            starBtn.classList.toggle("saved");
+          };
+
+          resultsEl.appendChild(node);
+        }
+
+        function renderSavedTab() {
+          resultsEl.innerHTML = "";
+          const saved = getSaved();
+          if (!saved.length) {
+            emptyState.classList.remove("hidden");
+            emptyState.querySelector("p").textContent =
+              "nothing saved yet. star an issue while discovering to keep it here.";
+            statusLine.textContent =
+              "showing saved issues (stored only in this browser).";
+            return;
+          }
+          emptyState.classList.add("hidden");
+          statusLine.textContent = `${saved.length} saved issue(s) — stored only in this browser.`;
+          saved.forEach((issue) => {
+            const node = template.content.cloneNode(true);
+            node.querySelector(".repo-link").textContent = issue.repoName;
+            node.querySelector(".repo-link").href =
+              `https://github.com/${issue.repoName}`;
+            const titleEl = node.querySelector(".issue-title");
+            titleEl.textContent = issue.title;
+            titleEl.style.cursor = "pointer";
+            titleEl.onclick = () => window.open(issue.html_url, "_blank");
+
+            const labelsWrap = node.querySelector(".labels-wrap");
+            (issue.labels || []).forEach((name) => {
+              const span = document.createElement("span");
+              span.className =
+                "label-tag" + (/help/i.test(name) ? " help" : "");
+              span.textContent = name;
+              labelsWrap.appendChild(span);
+            });
+            node.querySelector(".stars-count").textContent =
+              `💬 ${issue.comments}`;
+            node.querySelector(".comments-count").textContent = "";
+            node.querySelector(".updated-at").textContent = timeAgo(
+              issue.updated_at,
+            );
+
+            const starBtn = node.querySelector(".star-btn");
+            starBtn.classList.add("saved");
+            starBtn.onclick = () => {
+              toggleSave(issue);
+              renderSavedTab();
+            };
+            resultsEl.appendChild(node);
+          });
+        }
+
+        // ---------- tabs ----------
+        function setTab(tab) {
+          state.tab = tab;
+          el("tabDiscover").dataset.active =
+            tab === "discover" ? "true" : "false";
+          el("tabSaved").dataset.active = tab === "saved" ? "true" : "false";
+          el("tabDiscover").style.color =
+            tab === "discover" ? "var(--text)" : "var(--muted)";
+          el("tabSaved").style.color =
+            tab === "saved" ? "var(--text)" : "var(--muted)";
+          if (tab === "saved") {
+            renderSavedTab();
+          } else {
+            fetchIssues();
+          }
+        }
+
+        // ---------- wire up ----------
+        rebuildLangChips();
+        renderLabelChips();
+        updateSavedCount();
+
+        el("tabDiscover").onclick = () => setTab("discover");
+        el("tabSaved").onclick = () => setTab("saved");
+        el("searchBtn").onclick = () => {
+          state.query = el("searchInput").value;
+          fetchIssues();
+        };
+        el("searchInput").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            state.query = el("searchInput").value;
+            fetchIssues();
+          }
+        });
+        el("sortSelect").onchange = (e) => {
+          state.sort = e.target.value;
+          fetchIssues();
+        };
+        el("randomBtn").onclick = () => fetchIssues({ random: true });
+
+        // custom language input
+        function setCustomLanguage() {
+          const val = el("langInput").value.trim().toLowerCase();
+          if (!val) return;
+          state.lang = val;
+          rebuildLangChips(); // will show none of the preset chips active, which is correct
+          fetchIssues();
+        }
+        el("langBtn").onclick = setCustomLanguage;
+        el("langInput").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") setCustomLanguage();
+        });
+
+        // unassigned-only filter
+        el("unassignedChip").onclick = () => {
+          state.unassignedOnly = !state.unassignedOnly;
+          el("unassignedChip").dataset.active =
+            state.unassignedOnly ? "true" : "false";
+          fetchIssues();
+        };
+
+        // ---------- theme ----------
+        const THEME_KEY = "gitspark_theme_v1";
+        function applyTheme(theme) {
+          document.documentElement.setAttribute("data-theme", theme);
+          try {
+            localStorage.setItem(THEME_KEY, theme);
+          } catch (e) {}
+        }
+        function initTheme() {
+          let theme = "dark";
+          try {
+            theme = localStorage.getItem(THEME_KEY) || "dark";
+          } catch (e) {}
+          applyTheme(theme);
+        }
+        el("themeToggle").onclick = () => {
+          const current =
+            document.documentElement.getAttribute("data-theme") || "dark";
+          applyTheme(current === "dark" ? "light" : "dark");
+        };
+        initTheme();
+
+        // initial load
+        fetchIssues();
+      })();
+    </script>
+  </body>
+</html>
 
