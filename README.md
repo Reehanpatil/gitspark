@@ -1,3 +1,4 @@
+![PREFLIGHT Score](https://img.shields.io/badge/PREFLIGHT-100%2F100-3ED88B)
 # gitspark — find your first commit
 
 A single-page tool that helps beginner developers discover real, open, beginner-friendly
