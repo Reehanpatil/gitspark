@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>gitspark — find your first commit</title>
+    <meta name="author" content="Reehan MP" />
+    <meta name="robots" content="index, follow" />
+    <meta
+      name="description"
+      content="gitspark pulls live 'good first issue' and 'help wanted' threads from GitHub. Filter by language, get an AI-powered plain-English explanation, and ship your first pull request. No signup, no login, nothing stored but your own browser."
+    />
+
+    <!-- Open Graph / Product Hunt / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="gitspark — find your first open source commit"
+    />
+    <meta
+      property="og:description"
+      content="Live GitHub issues, filtered by language and status, explained in plain English. No signup, no login, no database — just open your browser and start contributing."
+    />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="gitspark — find your first open source commit"
+    />
+    <meta
+      name="twitter:description"
+      content="Live GitHub issues, filtered by language and status, explained in plain English. No signup, no login, no database."
+    />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -14,6 +43,7 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F5A623'%3E%3Cpath d='M12 2 L15 9 L22 10 L17 15 L18 22 L12 18.5 L6 22 L7 15 L2 10 L9 9 Z'/%3E%3C/svg%3E"
     />
+
     <style>
       :root {
         --bg: #0b0e14;
@@ -246,6 +276,77 @@
         outline-offset: 2px;
         border-radius: 4px;
       }
+
+      .filter-row {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+      }
+      .filter-row + .filter-row {
+        border-top: 1px solid var(--line);
+      }
+      .filter-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      @media (max-width: 640px) {
+        .filter-row {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+      }
+
+      .pg-btn {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--text);
+        transition: 0.15s ease;
+        cursor: pointer;
+      }
+      .pg-btn:hover:not(:disabled) {
+        border-color: var(--amber);
+        color: var(--amber);
+      }
+      .pg-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .explain-output {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      #apiKeyModal {
+        animation: fadeIn 0.15s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body class="min-h-screen">
@@ -259,7 +360,7 @@
             >git<span style="color: var(--add)">spark</span></span
           >
           <span
-            class="mono text-[10px] text-[--muted] hidden sm:inline"
+            class="mono text-[10px] hidden sm:inline"
             style="color: var(--muted)"
             >v1.0</span
           >
@@ -295,9 +396,74 @@
           >
             <span class="knob"></span>
           </button>
+          <button
+            id="apiKeyBtn"
+            class="chip mono focus-ring"
+            title="set your Anthropic API key for AI explanations"
+          >
+            🔑 api key
+          </button>
         </nav>
       </div>
     </header>
+
+    <!-- API KEY MODAL -->
+    <div
+      id="apiKeyModal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+      style="background: rgba(0, 0, 0, 0.6)"
+    >
+      <div
+        class="rounded-lg border p-5 w-full max-w-md"
+        style="background: var(--surface); border-color: var(--line)"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">Anthropic API key</h3>
+          <button
+            id="apiKeyClose"
+            class="mono text-xs focus-ring"
+            style="color: var(--muted)"
+          >
+            ✕ close
+          </button>
+        </div>
+        <p class="text-xs leading-relaxed mb-3" style="color: var(--muted)">
+          Needed for the "✨ Explain" button on each issue. Your key is stored
+          only in this browser's localStorage and sent directly to Anthropic —
+          never through any server of ours. Get a key at
+          <a
+            href="https://console.anthropic.com"
+            target="_blank"
+            class="underline"
+            style="color: var(--amber)"
+            >console.anthropic.com</a
+          >.
+        </p>
+        <input
+          id="apiKeyInput"
+          type="password"
+          placeholder="sk-ant-..."
+          class="mono w-full bg-transparent outline-none text-xs focus-ring rounded px-3 py-2 border mb-3"
+          style="color: var(--text); border-color: var(--line)"
+        />
+        <div class="flex items-center gap-2">
+          <button
+            id="apiKeySave"
+            class="btn-primary mono text-xs px-4 py-2 rounded focus-ring flex-1"
+          >
+            save key
+          </button>
+          <button id="apiKeyRemove" class="chip mono focus-ring px-3 py-2">
+            remove
+          </button>
+        </div>
+        <p
+          id="apiKeyStatus"
+          class="mono text-[11px] mt-2"
+          style="color: var(--add)"
+        ></p>
+      </div>
+    </div>
 
     <!-- HERO -->
     <section class="max-w-6xl mx-auto px-5 sm:px-8 pt-14 pb-8">
@@ -324,96 +490,90 @@
     <!-- SEARCH / FILTER TERMINAL -->
     <section class="max-w-6xl mx-auto px-5 sm:px-8 mb-6">
       <div
-        class="rounded-lg border p-3 sm:p-4"
+        class="rounded-lg border p-4 sm:p-5"
         style="background: var(--surface); border-color: var(--line)"
       >
-        <div class="flex items-center gap-2 mb-3">
+        <div
+          class="flex items-center gap-2 mb-1 pb-4"
+          style="border-bottom: 1px solid var(--line)"
+        >
           <span class="mono text-sm" style="color: var(--add)">$</span>
           <input
             id="searchInput"
             type="text"
             placeholder="search issues... e.g. 'parser', 'dark mode', 'cli'"
-            class="mono flex-1 bg-transparent outline-none text-sm focus-ring rounded px-1"
+            class="mono flex-1 border py-2 bg-transparent outline-none text-sm focus-ring rounded px-2.5"
             style="color: var(--text)"
           />
           <button
             id="searchBtn"
-            class="btn-primary mono text-xs px-3 py-1.5 rounded focus-ring"
+            class="btn-primary mono text-xs px-4 py-2 rounded focus-ring"
           >
             run
           </button>
         </div>
 
-        <div class="flex flex-wrap gap-2 mb-2 items-center" id="langChips">
-          <span
-            class="mono text-[10px] uppercase tracking-wider mr-1 self-center"
-            style="color: var(--muted)"
-            >lang</span
-          >
+        <div class="filter-row">
+          <span class="filter-label">🧩 LANG</span>
+          <div class="flex flex-wrap gap-2 items-center" id="langChips"></div>
         </div>
-        <div class="flex items-center gap-2 mb-3">
-          <input
-            id="langInput"
-            type="text"
-            placeholder="or type any language e.g. 'kotlin', 'elixir'..."
-            class="mono flex-1 bg-transparent outline-none text-xs focus-ring rounded px-2 py-1.5 border"
-            style="color: var(--text); border-color: var(--line)"
-          />
-          <button id="langBtn" class="chip mono focus-ring">
-            set language
-          </button>
+        <div class="filter-row">
+          <span class="filter-label">⌨️ CUSTOM</span>
+          <div class="flex items-center gap-2">
+            <input
+              id="langInput"
+              type="text"
+              placeholder="type any language e.g. 'kotlin', 'elixir'..."
+              class="mono flex-1 bg-transparent outline-none text-xs focus-ring rounded px-2.5 py-2 border"
+              style="color: var(--text); border-color: var(--line)"
+            />
+            <button id="langBtn" class="chip mono focus-ring px-3 py-2">
+              set
+            </button>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2 mb-2 items-center" id="labelChips">
-          <span
-            class="mono text-[10px] uppercase tracking-wider mr-1 self-center"
-            style="color: var(--muted)"
-            >label</span
-          >
+        <div class="filter-row">
+          <span class="filter-label">🏷️ LABEL</span>
+          <div class="flex flex-wrap gap-2 items-center" id="labelChips"></div>
         </div>
-        <div class="flex flex-wrap items-center gap-2 mb-2">
-          <span
-            class="mono text-[10px] uppercase tracking-wider mr-1"
-            style="color: var(--muted)"
-            >status</span
-          >
+        <div class="filter-row">
+          <span class="filter-label">🙋 STATUS</span>
           <button
             id="unassignedChip"
-            class="chip mono focus-ring"
+            class="chip mono focus-ring w-fit"
             data-active="false"
           >
-            🙋 unassigned only
+            unassigned only
           </button>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span
-            class="mono text-[10px] uppercase tracking-wider mr-1"
-            style="color: var(--muted)"
-            >sort</span
-          >
-          <select
-            id="sortSelect"
-            class="chip mono bg-transparent focus-ring"
-            style="color: var(--muted)"
-          >
-            <option value="created" style="background: var(--surface)">
-              newest
-            </option>
-            <option value="updated" style="background: var(--surface)">
-              recently updated
-            </option>
-            <option value="comments" style="background: var(--surface)">
-              most discussed
-            </option>
-          </select>
-          <button id="randomBtn" class="chip mono ml-auto focus-ring">
-            🎲 surprise me
-          </button>
+        <div class="filter-row">
+          <span class="filter-label">↕️ SORT</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <select
+              id="sortSelect"
+              class="chip mono bg-transparent focus-ring"
+              style="color: var(--muted)"
+            >
+              <option value="created" style="background: var(--surface)">
+                newest
+              </option>
+              <option value="updated" style="background: var(--surface)">
+                recently updated
+              </option>
+              <option value="comments" style="background: var(--surface)">
+                most discussed
+              </option>
+            </select>
+            <button id="randomBtn" class="chip mono ml-auto focus-ring">
+              🎲 surprise me
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- STATUS LINE -->
-    <section class="max-w-6xl mx-auto px-5 sm:px-8 mb-5">
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 mb-2">
       <div
         class="rounded-lg border px-4 py-3 flex items-center gap-3"
         style="background: var(--surface); border-color: var(--line)"
@@ -425,8 +585,18 @@
       </div>
     </section>
 
+    <!-- OPEN SOURCE NOTE -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 mb-5">
+      <p class="mono text-[11px] leading-relaxed" style="color: var(--muted)">
+        ℹ️ all issues are pulled live from public, open-source GitHub repos.
+        clicking a card opens the real issue on GitHub — to solve it you'll fork
+        the repo and submit a pull request there, same as any normal
+        contribution.
+      </p>
+    </section>
+
     <!-- RESULTS -->
-    <section class="max-w-6xl mx-auto px-5 sm:px-8 pb-24">
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 pb-10">
       <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       <div id="emptyState" class="hidden text-center py-20">
         <p class="mono text-sm" style="color: var(--muted)">
@@ -441,6 +611,14 @@
           background: var(--remove-dim);
           color: var(--remove);
         "
+      ></div>
+    </section>
+
+    <!-- PAGINATION -->
+    <section class="max-w-6xl mx-auto px-5 sm:px-8 pb-24">
+      <div
+        id="pagination"
+        class="hidden flex flex-wrap items-center justify-center gap-2"
       ></div>
     </section>
 
@@ -488,6 +666,18 @@
               <span class="comments-count"></span>
               <span class="updated-at"></span>
             </div>
+            <div class="mt-3 pt-3" style="border-top: 1px solid var(--line)">
+              <button
+                class="explain-btn chip mono focus-ring"
+                data-state="idle"
+              >
+                ✨ explain this issue
+              </button>
+              <div
+                class="explain-output mono text-xs leading-relaxed mt-2 hidden"
+                style="color: var(--text)"
+              ></div>
+            </div>
           </div>
         </div>
       </article>
@@ -495,11 +685,11 @@
 
     <footer class="border-t py-6" style="border-color: var(--line)">
       <p
-  class="max-w-6xl mx-auto px-5 sm:px-8 mono text-[11px]"
-  style="color: var(--muted); text-align: center;"
->
-  Developed by ❤️ Reehan MP
-</p>
+        class="max-w-6xl mx-auto px-5 sm:px-8 mono text-[11px]"
+        style="color: var(--muted); text-align: center"
+      >
+        Developed by ❤️ Reehan MP
+      </p>
     </footer>
 
     <script>
@@ -526,6 +716,9 @@
           tab: "discover",
           items: [],
           unassignedOnly: false,
+          page: 1,
+          perPage: 10,
+          totalPages: 1,
         };
 
         const el = (id) => document.getElementById(id);
@@ -568,27 +761,203 @@
           el("savedCount").textContent = getSaved().length;
         }
 
-        // ---------- chips ----------
-        function renderChips() {
-          const langWrap = el("langChips");
-          LANGS.forEach((l) => {
-            const b = document.createElement("button");
-            b.textContent = l;
-            b.className = "chip mono focus-ring";
-            b.dataset.active = state.lang === l ? "true" : "false";
-            b.onclick = () => {
-              state.lang = state.lang === l ? null : l;
-              renderChips();
-            };
-            langWrap.appendChild(b);
-          });
-          // clear old chips before re-render (avoid dupes on toggle)
-          Array.from(langWrap.children).forEach((c, i) => {
-            if (i > 0) return;
-          });
+        // ---------- API key (BYOK) ----------
+        const API_KEY_STORAGE = "gitspark_anthropic_key_v1";
+        function getApiKey() {
+          try {
+            return localStorage.getItem(API_KEY_STORAGE) || "";
+          } catch (e) {
+            return "";
+          }
         }
+        function setApiKey(key) {
+          try {
+            localStorage.setItem(API_KEY_STORAGE, key);
+          } catch (e) {}
+        }
+        function removeApiKey() {
+          try {
+            localStorage.removeItem(API_KEY_STORAGE);
+          } catch (e) {}
+        }
+
+        function openApiKeyModal() {
+          el("apiKeyInput").value = getApiKey();
+          el("apiKeyStatus").textContent = "";
+          el("apiKeyModal").classList.remove("hidden");
+        }
+        function closeApiKeyModal() {
+          el("apiKeyModal").classList.add("hidden");
+        }
+
+        el("apiKeyBtn").onclick = openApiKeyModal;
+        el("apiKeyClose").onclick = closeApiKeyModal;
+        el("apiKeyModal").addEventListener("click", (e) => {
+          if (e.target.id === "apiKeyModal") closeApiKeyModal();
+        });
+        el("apiKeySave").onclick = () => {
+          const val = el("apiKeyInput").value.trim();
+          if (!val) {
+            el("apiKeyStatus").style.color = "var(--remove)";
+            el("apiKeyStatus").textContent = "enter a key first.";
+            return;
+          }
+          setApiKey(val);
+          el("apiKeyStatus").style.color = "var(--add)";
+          el("apiKeyStatus").textContent =
+            'saved. you can now use "explain this issue".';
+        };
+        el("apiKeyRemove").onclick = () => {
+          removeApiKey();
+          el("apiKeyInput").value = "";
+          el("apiKeyStatus").style.color = "var(--muted)";
+          el("apiKeyStatus").textContent = "key removed.";
+        };
+
+        // ---------- AI explain ----------
+        async function explainIssue(
+          btn,
+          outputEl,
+          title,
+          body,
+          repoName,
+          labels,
+          comments,
+        ) {
+          const key = getApiKey();
+
+          if (!key) {
+            // no key: use the free local heuristic instantly, no network call, no modal
+            outputEl.classList.remove("hidden");
+            outputEl.textContent = heuristicExplain(
+              title,
+              body,
+              labels,
+              comments,
+              repoName,
+            );
+            btn.textContent = "🧩 quick take shown ↻ regenerate";
+            return;
+          }
+
+          btn.dataset.state = "loading";
+          btn.textContent = "✨ thinking...";
+          btn.disabled = true;
+          outputEl.classList.remove("hidden");
+          outputEl.textContent = "asking claude to break this down...";
+
+          const trimmedBody = (body || "no description provided.").slice(
+            0,
+            3000,
+          );
+          const prompt = `You are helping a beginner programmer understand an open-source GitHub issue so they can attempt to fix it.
+Repo: ${repoName}
+Issue title: ${title}
+Issue description:
+${trimmedBody}
+
+In under 120 words, explain in simple plain language: (1) what this issue is actually asking for, (2) roughly what kind of change it needs (e.g. "fix a bug in a function", "add a UI element", "write docs"), and (3) one concrete first step a beginner could take to start. No headers, no markdown, just plain short sentences.`;
+
+          try {
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+                "anthropic-dangerous-direct-browser-access": "true",
+              },
+              body: JSON.stringify({
+                model: "claude-haiku-4-5-20251001",
+                max_tokens: 300,
+                messages: [{ role: "user", content: prompt }],
+              }),
+            });
+            if (!res.ok) {
+              const errText = await res.text().catch(() => "");
+              throw new Error(`${res.status} ${errText.slice(0, 200)}`);
+            }
+            const data = await res.json();
+            const text = (data.content || [])
+              .map((b) => b.text || "")
+              .join("\n")
+              .trim();
+            outputEl.textContent =
+              text || heuristicExplain(title, body, labels, comments, repoName);
+            btn.textContent = "✨ explained ↻ regenerate";
+          } catch (err) {
+            console.error(err);
+            // AI call failed (bad key, rate limit, offline) — fall back to the free heuristic instead of just showing an error
+            outputEl.textContent =
+              heuristicExplain(title, body, labels, comments, repoName) +
+              "\n\n(AI call failed — showing the free quick take instead. Check your API key.)";
+            btn.textContent = "✨ explain this issue";
+          } finally {
+            btn.dataset.state = "idle";
+            btn.disabled = false;
+          }
+        }
+
+        // ---------- free, no-key heuristic explanation (always available) ----------
+        function heuristicExplain(title, body, labels, comments, repoName) {
+          const t = (title || "").toLowerCase();
+          const b = (body || "").toLowerCase();
+          const combined = t + " " + b;
+          const labelStr = (labels || []).join(" ").toLowerCase();
+
+          let kind = "a general code change";
+          if (/typo|spelling|grammar/.test(combined))
+            kind = "a small text/typo fix";
+          else if (
+            /\bdoc(s|umentation)?\b/.test(combined) ||
+            /documentation/.test(labelStr)
+          )
+            kind = "a documentation update";
+          else if (
+            /\btest(s|ing)?\b/.test(combined) &&
+            /add|write|missing|coverage/.test(combined)
+          )
+            kind = "adding or fixing tests";
+          else if (
+            /\bbug\b|\berror\b|\bcrash\b|\bfail(s|ing)?\b|broken/.test(
+              combined,
+            ) ||
+            /bug/.test(labelStr)
+          )
+            kind = "a bug fix";
+          else if (
+            /\bui\b|button|css|style|design|layout|dark mode/.test(combined)
+          )
+            kind = "a UI/styling change";
+          else if (/\bperformance\b|\bslow\b|optimi[sz]e/.test(combined))
+            kind = "a performance improvement";
+          else if (
+            /\baccessibility\b|\ba11y\b|screen reader|aria/.test(combined)
+          )
+            kind = "an accessibility fix";
+          else if (
+            /\bfeature\b|add support|implement|enhancement/.test(combined) ||
+            /enhancement/.test(labelStr)
+          )
+            kind = "a new small feature";
+          else if (/refactor|clean ?up|rename/.test(combined))
+            kind = "a code cleanup/refactor";
+
+          let size = "a small, contained change";
+          if ((comments || 0) >= 8)
+            size =
+              "possibly a bit more involved — there's active discussion on it, worth reading the comments first";
+          else if ((comments || 0) === 0)
+            size =
+              "likely quick — no discussion yet, so it's probably still fresh and well-scoped";
+
+          return `This looks like ${kind} in ${repoName}. Based on the title and labels, it's ${size}. First step: open the issue on GitHub, read the full description and any comments, then check the repo's CONTRIBUTING.md before you fork it.\n\n(quick heuristic guess — add an API key above for a real AI-written explanation)`;
+        }
+
+        // ---------- chips ----------
         function renderLabelChips() {
           const wrap = el("labelChips");
+          wrap.innerHTML = "";
           LABELS.forEach((l) => {
             const b = document.createElement("button");
             b.textContent = l.key;
@@ -600,14 +969,15 @@
                 btn.dataset.active =
                   btn.textContent === l.key ? "true" : "false";
               });
+              state.page = 1;
+              fetchIssues();
             };
             wrap.appendChild(b);
           });
         }
-        // build lang chips properly without dupes (rebuild each time)
         function rebuildLangChips() {
           const wrap = el("langChips");
-          wrap.querySelectorAll("button").forEach((b) => b.remove());
+          wrap.innerHTML = "";
           LANGS.forEach((l) => {
             const b = document.createElement("button");
             b.textContent = l;
@@ -615,7 +985,9 @@
             b.dataset.active = state.lang === l ? "true" : "false";
             b.onclick = () => {
               state.lang = state.lang === l ? null : l;
+              state.page = 1;
               rebuildLangChips();
+              fetchIssues();
             };
             wrap.appendChild(b);
           });
@@ -626,6 +998,7 @@
           statusLine.textContent = "fetching from github...";
           emptyState.classList.add("hidden");
           rateNote.classList.add("hidden");
+          el("pagination").classList.add("hidden");
           resultsEl.innerHTML = "";
           showSkeletons();
 
@@ -635,7 +1008,9 @@
           if (state.query.trim()) q += ` ${state.query.trim()} in:title`;
 
           const sort = state.sort === "comments" ? "comments" : state.sort;
-          const url = `https://api.github.com/search/issues?q=${encodeURIComponent(q)}&sort=${sort}&order=desc&per_page=25`;
+          const perPage = random ? 25 : state.perPage;
+          const page = random ? 1 : state.page;
+          const url = `https://api.github.com/search/issues?q=${encodeURIComponent(q)}&sort=${sort}&order=desc&per_page=${perPage}&page=${page}`;
 
           try {
             const res = await fetch(url, {
@@ -656,16 +1031,91 @@
             let items = data.items || [];
             if (random && items.length) {
               items = [items[Math.floor(Math.random() * items.length)]];
+              renderResults(items);
+              statusLine.textContent = `showing 1 random pick${state.lang ? " · " + state.lang : ""}.`;
+              return;
             }
+            // GitHub search API only exposes the first 1000 results regardless of total_count
+            const reachableTotal = Math.min(data.total_count || 0, 1000);
+            state.totalPages = Math.max(
+              1,
+              Math.ceil(reachableTotal / state.perPage),
+            );
+            if (state.page > state.totalPages) state.page = state.totalPages;
+
             state.items = items;
             renderResults(items);
-            statusLine.textContent = `${data.total_count ?? items.length} open issue(s) found${state.lang ? " · " + state.lang : ""}.`;
+            statusLine.textContent = `${data.total_count ?? items.length} open issue(s) found${state.lang ? " · " + state.lang : ""} · page ${state.page} of ${state.totalPages}`;
+            renderPagination();
           } catch (err) {
             console.error(err);
             statusLine.textContent =
               "couldn't reach github. check your connection and try again.";
             resultsEl.innerHTML = "";
           }
+        }
+
+        function renderPagination() {
+          const wrap = el("pagination");
+          wrap.innerHTML = "";
+          if (state.totalPages <= 1) {
+            wrap.classList.add("hidden");
+            return;
+          }
+          wrap.classList.remove("hidden");
+
+          const goTo = (p) => {
+            if (p < 1 || p > state.totalPages || p === state.page) return;
+            state.page = p;
+            fetchIssues();
+            window.scrollTo({
+              top: resultsEl.offsetTop - 100,
+              behavior: "smooth",
+            });
+          };
+
+          const prev = document.createElement("button");
+          prev.className = "pg-btn";
+          prev.textContent = "‹ prev";
+          prev.disabled = state.page === 1;
+          prev.onclick = () => goTo(state.page - 1);
+          wrap.appendChild(prev);
+
+          // condensed page numbers: first, current-1..current+1, last
+          const pages = new Set([
+            1,
+            state.totalPages,
+            state.page - 1,
+            state.page,
+            state.page + 1,
+          ]);
+          const sorted = Array.from(pages)
+            .filter((p) => p >= 1 && p <= state.totalPages)
+            .sort((a, b) => a - b);
+          let lastShown = 0;
+          sorted.forEach((p) => {
+            if (lastShown && p - lastShown > 1) {
+              const dots = document.createElement("span");
+              dots.className = "mono text-xs px-1";
+              dots.style.color = "var(--muted)";
+              dots.textContent = "…";
+              wrap.appendChild(dots);
+            }
+            const b = document.createElement("button");
+            b.className = "pg-btn";
+            b.textContent = p;
+            b.dataset.active = p === state.page ? "true" : "false";
+            b.onclick = () => goTo(p);
+            wrap.appendChild(b);
+            lastShown = p;
+          });
+
+          const next = document.createElement("button");
+          next.className = "pg-btn";
+          next.textContent = "next ›";
+          next.disabled = state.page === state.totalPages;
+          next.onclick = () => goTo(state.page + 1);
+          wrap.appendChild(next);
         }
 
         function showSkeletons() {
@@ -760,9 +1210,23 @@
               comments: issue.comments,
               updated_at: issue.updated_at,
               labels: (issue.labels || []).map((l) => l.name),
+              body: issue.body || "",
             });
             starBtn.classList.toggle("saved");
           };
+
+          const explainBtn = node.querySelector(".explain-btn");
+          const explainOut = node.querySelector(".explain-output");
+          explainBtn.onclick = () =>
+            explainIssue(
+              explainBtn,
+              explainOut,
+              issue.title,
+              issue.body,
+              repoName,
+              (issue.labels || []).map((l) => l.name),
+              issue.comments,
+            );
 
           resultsEl.appendChild(node);
         }
@@ -811,6 +1275,20 @@
               toggleSave(issue);
               renderSavedTab();
             };
+
+            const explainBtn = node.querySelector(".explain-btn");
+            const explainOut = node.querySelector(".explain-output");
+            explainBtn.onclick = () =>
+              explainIssue(
+                explainBtn,
+                explainOut,
+                issue.title,
+                issue.body,
+                issue.repoName,
+                issue.labels,
+                issue.comments,
+              );
+
             resultsEl.appendChild(node);
           });
         }
@@ -826,6 +1304,7 @@
           el("tabSaved").style.color =
             tab === "saved" ? "var(--text)" : "var(--muted)";
           if (tab === "saved") {
+            el("pagination").classList.add("hidden");
             renderSavedTab();
           } else {
             fetchIssues();
@@ -841,16 +1320,19 @@
         el("tabSaved").onclick = () => setTab("saved");
         el("searchBtn").onclick = () => {
           state.query = el("searchInput").value;
+          state.page = 1;
           fetchIssues();
         };
         el("searchInput").addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
             state.query = el("searchInput").value;
+            state.page = 1;
             fetchIssues();
           }
         });
         el("sortSelect").onchange = (e) => {
           state.sort = e.target.value;
+          state.page = 1;
           fetchIssues();
         };
         el("randomBtn").onclick = () => fetchIssues({ random: true });
@@ -860,6 +1342,7 @@
           const val = el("langInput").value.trim().toLowerCase();
           if (!val) return;
           state.lang = val;
+          state.page = 1;
           rebuildLangChips(); // will show none of the preset chips active, which is correct
           fetchIssues();
         }
@@ -873,6 +1356,7 @@
           state.unassignedOnly = !state.unassignedOnly;
           el("unassignedChip").dataset.active =
             state.unassignedOnly ? "true" : "false";
+          state.page = 1;
           fetchIssues();
         };
 
@@ -904,4 +1388,3 @@
     </script>
   </body>
 </html>
-
