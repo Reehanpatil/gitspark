@@ -6,7 +6,10 @@
     <title>gitspark — find your first commit</title>
     <meta name="author" content="Reehan MP" />
     <meta name="robots" content="index, follow" />
-    <meta name="description" content="gitspark is a tool to find beginner-friendly GitHub issues with AI. Try it out and see how it fits your workflow.">
+    <meta
+      name="description"
+      content="gitspark is a tool to find beginner-friendly GitHub issues with AI. Try it out and see how it fits your workflow."
+    />
     <!-- Open Graph / Product Hunt / Facebook -->
     <meta property="og:type" content="website" />
     <meta
@@ -349,7 +352,7 @@
     <!-- NAV -->
     <header class="border-b" style="border-color: var(--line)">
       <div
-        class="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between"
+        class="max-w-6xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex flex-col sm:flex-row items-center sm:justify-between gap-3 sm:gap-0"
       >
         <div class="flex items-center gap-2">
           <span class="mono text-lg font-extrabold tracking-tight"
@@ -361,7 +364,9 @@
             >v1.0</span
           >
         </div>
-        <nav class="flex items-center gap-6 mono text-sm">
+        <nav
+          class="flex items-center flex-wrap justify-center gap-3 sm:gap-6 mono text-xs sm:text-sm"
+        >
           <button
             id="tabDiscover"
             data-active="true"
@@ -394,10 +399,10 @@
           </button>
           <button
             id="apiKeyBtn"
-            class="chip mono focus-ring"
+            class="chip mono focus-ring whitespace-nowrap"
             title="set your Anthropic API key for AI explanations"
           >
-            🔑 api key
+            🔑<span class="hidden sm:inline"> api key</span>
           </button>
         </nav>
       </div>
